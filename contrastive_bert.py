@@ -16,21 +16,16 @@ model.to(device)
 
 for epoch in range(10):
     model.train()
-    for batch in data_loader:
-        batch={key:batch[key].to(device) for key in batch.keys()}
-        input_ids1 = batch['input_ids1']
-        attention_mask1 = batch['attention_mask1']
-        token_type_ids1 = batch['token_type_ids1']
-        batch1={'input_ids':input_ids1,'attention_mask':attention_mask1,'token_type_ids':token_type_ids1}
-        input_ids2 = batch['input_ids2'].to(device)
-        attention_mask2 = batch['attention_mask2'].to(device)
-        token_type_ids2 = batch['token_type_ids2'].to(device)
-        batch2={'input_ids':input_ids2,'attention_mask':attention_mask2,'token_type_ids':token_type_ids2}
+    for batch1, batch2 in data_loader:
+        batch1 = {key: batch1[key].to(device) for key in batch1.keys()}
+        batch2 = {key: batch2[key].to(device) for key in batch2.keys()}
         outputs1 = model.encode(batch1)
         outputs2 = model.encode(batch2)
         loss = criterion(outputs1, outputs2)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
+        
 
     print(f"Epoch {epoch + 1}, Loss: {loss.item()}")
