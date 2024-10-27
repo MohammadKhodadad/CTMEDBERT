@@ -18,9 +18,11 @@ criterion = InfoNCELoss()
 optimizer, warmup_scheduler, cosine_scheduler = get_optimizer_and_scheduler(model,0.0001,WARM_UP_STEPS, TOTAL_STEPS)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
-
+step=0
 for epoch in range(EPOCHS):
     model.train()
+    for param_group in optimizer.param_groups:
+        print(f"Epoch {epoch}: Learning Rate = {param_group['lr']}")
     for batch1, batch2 in data_loader:
         batch1 = {key: batch1[key].to(device) for key in batch1.keys()}
         batch2 = {key: batch2[key].to(device) for key in batch2.keys()}
@@ -31,7 +33,8 @@ for epoch in range(EPOCHS):
         loss.backward()
         optimizer.step()
         warmup_scheduler.step()
-        if step >= warmup_steps:
+        if step >= WARM_UP_STEPS:
             cosine_scheduler.step()
+        step+=1
 
     print(f"Epoch {epoch + 1}, Loss: {loss.item()}")
