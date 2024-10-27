@@ -14,7 +14,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 
-for epoch in range(10):
+for epoch in range(100):
     model.train()
     for batch1, batch2 in data_loader:
         batch1 = {key: batch1[key].to(device) for key in batch1.keys()}
