@@ -1,14 +1,20 @@
-from transformers import AutoModel
+from transformers import AutoModel, AutoModelForMaskedLM
 import torch
 import torch.nn as nn
 import os
 
 class Model(nn.Module):  # Inherit from torch.nn.Module
-    def __init__(self, hf_address="bert-base-uncased", cache_dir='./cache'):
+    def __init__(self, hf_address="bert-base-uncased", cache_dir='./cache',task='contrastive'):
         super(Model, self).__init__()
         self.hf_address = hf_address
         self.cache_dir = cache_dir
-        self.model = AutoModel.from_pretrained(hf_address, cache_dir=cache_dir)
+        if task=='contrastive':
+            self.model = AutoModel.from_pretrained(hf_address, cache_dir=cache_dir)
+        elif task=='mlm':
+            self.model = AutoModelForMaskedLM.from_pretrained(hf_address, cache_dir=cache_dir)
+        else:
+            raise Exception('task has to be mlm or contastive.')
+
 
     def encode(self, inputs_):
         outputs = self.model(**inputs_)
@@ -26,7 +32,8 @@ class Model(nn.Module):  # Inherit from torch.nn.Module
             print(f"Model weights loaded from {load_path}.")
         else:
             print(f"Weight file {load_path} does not exist.")
-
+    def save_pretrained(self, address):
+        self.model.save_pretrained(address)
 if __name__ == "__main__":
     model_instance = Model()  # The model will be cached in ./cache
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
