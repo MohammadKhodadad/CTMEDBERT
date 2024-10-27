@@ -34,6 +34,10 @@ class Model(nn.Module):  # Inherit from torch.nn.Module
             print(f"Weight file {load_path} does not exist.")
     def save_pretrained(self, address):
         self.model.save_pretrained(address)
+
+    def forward(self, **inputs_):
+        outputs = self.model(**inputs_)
+        return outputs
 if __name__ == "__main__":
     model_instance = Model()  # The model will be cached in ./cache
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

@@ -2,7 +2,7 @@ import os
 import torch
 import pickle
 from torch.utils.data import Dataset, DataLoader
-from transformers import AutoTokenizer
+from transformers import DataCollatorForLanguageModeling
 
 # Step 1: Load and tokenize the text files
 class TokenizedChunkedDataset:
@@ -58,9 +58,12 @@ class TokenizedChunkedDataset:
 
 
 # Step 2: DataLoader function for efficient retrieval
-def get_tokenized_dataloader(directory_path, tokenizer, batch_size=32, max_length=128):
+def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=128,mlm_probability=0.15):
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer, mlm=True, mlm_probability=mlm_probability
+    )
     dataset = TokenizedChunkedDataset(directory_path, tokenizer=tokenizer, chunk_size=max_length)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=True,collate_fn=data_collator)
 
 
 # Step 3: Example usage
@@ -72,10 +75,14 @@ if __name__ == "__main__":
     from tokenizer_loader import load_tokenizer
     tokenizer=load_tokenizer()
     # Load the DataLoader
-    tokenized_dataloader = get_tokenized_dataloader(directory_path, tokenizer)
+    tokenized_dataloader = get_mlm_dataloader(directory_path, tokenizer)
 
     # Iterate through the DataLoader and inspect the batches
     for batch in tokenized_dataloader:
         print("Input IDs:", batch['input_ids'][0])
-        print("Attention Mask:", batch['attention_mask'][0])
-        print("Token type ids:", batch['token_type_ids'][0])
+        print(tokenizer.decode(batch['input_ids'][0]))
+        print("Input IDs:", batch['labels'][0])
+        print(tokenizer.decode(batch['labels'][0][batch['labels'][0]>=0]))
+        # print("Attention Mask:", batch['attention_mask'][0])
+        # print("Token type ids:", batch['token_type_ids'][0])
+        
