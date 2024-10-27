@@ -23,14 +23,14 @@ class InfoNCELoss(nn.Module):
         loss = F.cross_entropy(similarity_matrix, labels)
 
         return loss
+if __name__ == "__main__":
+    # Example usage
+    batch_size = 16
+    embedding_dim = 128
 
-# Example usage
-batch_size = 16
-embedding_dim = 128
+    anchor = torch.randn(batch_size, embedding_dim)  # Embedding for anchor (sentence 1)
+    positive = torch.randn(batch_size, embedding_dim)  # Embedding for positive (sentence 2)
 
-anchor = torch.randn(batch_size, embedding_dim)  # Embedding for anchor (sentence 1)
-positive = torch.randn(batch_size, embedding_dim)  # Embedding for positive (sentence 2)
-
-loss_fn = InfoNCELoss(temperature=0.07)
-loss = loss_fn(anchor, positive)
-print("Modified InfoNCE Loss:", loss.item())
+    loss_fn = InfoNCELoss(temperature=0.07)
+    loss = loss_fn(anchor, positive)
+    print("Modified InfoNCE Loss:", loss.item())
