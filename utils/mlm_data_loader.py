@@ -14,13 +14,15 @@ class TokenizedChunkedDataset:
 
         # Step 1: Load and concatenate all text files
         self.full_text = self.load_all_text_files()
-
+        print(f"full_text: {len(self.full_text)}")
+        self.full_text = self.full_text [:10000000]
+        print(f"full_text: {len(self.full_text)}")
         # Step 2: Tokenize the full concatenated text without truncation
         self.tokenized_data = self.tokenize_full_text()
-
+        print(f"tokenized_data: {len(self.tokenized_data)}")
         # Step 3: Calculate the number of chunks based on the chunk size
         self.num_chunks = len(self.tokenized_data['input_ids'][0]) // self.chunk_size
-
+        print(f"THE NUMBER OF CHUNKS: {self.num_chunks}")
     def load_all_text_files(self):
         full_text = ""
         for file in self.files:

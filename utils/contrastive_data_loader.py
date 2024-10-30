@@ -9,7 +9,7 @@ class ContrastiveDataset(Dataset):
         self.data = dataframe
         self.tokenizer = tokenizer
         self.max_length = max_length
-
+        print(f"THE NUMBER OF RECORDS: {len(self.data)}")
     def __len__(self):
         return len(self.data)
 
@@ -19,9 +19,13 @@ class ContrastiveDataset(Dataset):
         sentence2 = self.data.iloc[index]['sentence2']
 
         # Tokenize the sentence pair
+        # try:
         inputs1 = self.tokenizer(sentence1, return_tensors="pt", max_length=self.max_length, padding='max_length', truncation=True)
         inputs2 = self.tokenizer(sentence2, return_tensors="pt", max_length=self.max_length, padding='max_length', truncation=True)
-
+        # except:
+        #     print(sentence1)
+        #     print(sentence2)
+        #     raise Exception('error')
         # Return the tokenized inputs for contrastive learning
         return {
             'input_ids1': inputs1['input_ids'].squeeze(),  # Squeeze to remove extra dimension
