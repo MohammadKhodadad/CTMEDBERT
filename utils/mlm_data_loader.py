@@ -3,10 +3,10 @@ import torch
 import pickle
 from torch.utils.data import Dataset, DataLoader
 from transformers import DataCollatorForLanguageModeling
-
+from torch.utils.data import random_split
 # Step 1: Load and tokenize the text files
-class TokenizedChunkedDataset:
-    def __init__(self, directory_path, tokenizer, chunk_size=128):
+class TokenizedChunkedDataset(Dataset):
+    def __init__(self, directory_path, tokenizer, chunk_size=512):
         # Get all the files from the directory
         self.files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.endswith('.txt')]
         self.tokenizer = tokenizer
@@ -60,12 +60,21 @@ class TokenizedChunkedDataset:
 
 
 # Step 2: DataLoader function for efficient retrieval
-def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=128,mlm_probability=0.15):
+def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=512,mlm_probability=0.15):
     data_collator = DataCollatorForLanguageModeling(
         tokenizer=tokenizer, mlm=True, mlm_probability=mlm_probability
     )
     dataset = TokenizedChunkedDataset(directory_path, tokenizer=tokenizer, chunk_size=max_length)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True,collate_fn=data_collator)
+    train_size = int(0.8 * len(dataset))  # 80% for training
+    test_size = len(dataset) - train_size  # 20% for testing
+
+    # Split the dataset
+    train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+
+    # Create DataLoaders for train and test sets
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=data_collator)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=data_collator)
+    return train_loader,test_loader
 
 
 # Step 3: Example usage

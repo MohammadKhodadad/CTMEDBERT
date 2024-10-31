@@ -2,10 +2,10 @@ import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 import torch
 
-
+from torch.utils.data import random_split
 # Step 2: Dataset Class for Contrastive Learning
 class ContrastiveDataset(Dataset):
-    def __init__(self, dataframe, tokenizer, max_length=128):
+    def __init__(self, dataframe, tokenizer, max_length=512):
         self.data = dataframe
         self.tokenizer = tokenizer
         self.max_length = max_length
@@ -64,9 +64,19 @@ def collate_fn(batch):
     return batch1, batch2
 
 # Step 3: DataLoader Function
-def get_contrastive_dataloader(dataframe,tokenizer, batch_size=32, max_length=128):
+def get_contrastive_dataloader(dataframe,tokenizer, batch_size=32, max_length=512):
     dataset = ContrastiveDataset(dataframe, tokenizer=tokenizer, max_length=max_length)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True,collate_fn=collate_fn)
+    train_size = int(0.8 * len(dataset))  # 80% for training
+    test_size = len(dataset) - train_size  # 20% for testing
+
+    # Split the dataset
+    train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+
+    # Create DataLoaders for train and test sets
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=data_collator)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=data_collator)
+
+    return train_dataset, test_dataset
 
 # Step 4: Test the DataLoader
 if __name__ == "__main__":
