@@ -14,8 +14,8 @@ class TokenizedChunkedDataset:
 
         # Step 1: Load and concatenate all text files
         self.full_text = self.load_all_text_files()
-        print(f"full_text: {len(self.full_text)}")
-        self.full_text = self.full_text [:10000000]
+        # print(f"full_text: {len(self.full_text)}")
+        # self.full_text = self.full_text [:10000000]
         print(f"full_text: {len(self.full_text)}")
         # Step 2: Tokenize the full concatenated text without truncation
         self.tokenized_data = self.tokenize_full_text()

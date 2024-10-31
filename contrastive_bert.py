@@ -19,7 +19,7 @@ create_cl_data_from_csv('./data/discharge_processed.csv','./data/','history_of_p
 data=pd.read_csv("./data/history_of_present_illness_vs_chief_complaint_cleaned.csv")
 data_loader = get_contrastive_dataloader(data, tokenizer)
 criterion = InfoNCELoss()
-optimizer, warmup_scheduler, cosine_scheduler = get_optimizer_and_scheduler(model,0.0001,WARM_UP_STEPS, TOTAL_STEPS)
+optimizer, scheduler = get_optimizer_and_scheduler(model,0.0001,WARM_UP_STEPS, TOTAL_STEPS)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 step=0
@@ -36,9 +36,7 @@ for epoch in range(EPOCHS):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        warmup_scheduler.step()
-        if step >= WARM_UP_STEPS:
-            cosine_scheduler.step()
+        scheduler.step()
         step+=1
     if step>0 and step%SAVE_STEP==0:
         model.save_pretrained(f'./weights/contrastive/step_{step}/')
