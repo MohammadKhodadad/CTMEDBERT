@@ -65,7 +65,7 @@ def collate_func(batch):
     return batch1, batch2
 
 # Step 3: DataLoader Function
-def get_contrastive_dataloader(dataframe,tokenizer, batch_size=64, max_length=512):
+def get_contrastive_dataloader(dataframe,tokenizer, batch_size=32, max_length=512):
     dataset = ContrastiveDataset(dataframe, tokenizer=tokenizer, max_length=max_length)
     train_size = int(0.8 * len(dataset))  # 80% for training
     test_size = len(dataset) - train_size  # 20% for testing
