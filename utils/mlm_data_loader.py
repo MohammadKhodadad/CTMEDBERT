@@ -1,9 +1,13 @@
 import os
+import nltk
+# nltk.download('punkt')
+# nltk.download('punkt_tab')
 import torch
 import pickle
 from torch.utils.data import Dataset, DataLoader
 from transformers import DataCollatorForLanguageModeling
 from torch.utils.data import random_split
+from nltk.tokenize import sent_tokenize
 # Step 1: Load and tokenize the text files
 class TokenizedChunkedDataset(Dataset):
     def __init__(self, directory_path, tokenizer, chunk_size=512):
@@ -21,7 +25,7 @@ class TokenizedChunkedDataset(Dataset):
         self.tokenized_data = self.tokenize_full_text()
         print(f"tokenized_data: {len(self.tokenized_data)}")
         # Step 3: Calculate the number of chunks based on the chunk size
-        self.num_chunks = len(self.tokenized_data['input_ids'][0]) // self.chunk_size
+        self.num_chunks = len(self.tokenized_data)
         print(f"THE NUMBER OF CHUNKS: {self.num_chunks}")
     def load_all_text_files(self):
         full_text = ""
@@ -31,31 +35,62 @@ class TokenizedChunkedDataset(Dataset):
         return full_text
 
     def tokenize_full_text(self):
-        # Tokenize the full concatenated text WITHOUT truncation
-        tokenized_data = self.tokenizer(self.full_text, return_tensors="pt", padding=False, truncation=False)
-        return tokenized_data
+        # Step 1: Clean up the text to handle newline characters
+        cleaned_text = self.full_text.replace('\n', ' ')  # Replace newlines with a space
 
+        # Step 2: Split the cleaned text into sentences
+        sentences = sent_tokenize(cleaned_text)
+
+        chunks = []
+        current_chunk = []
+        current_length = 0
+
+        for sentence in tqdm.tqdm(sentences):
+            # Tokenize the current sentence without truncation
+            tokenized_sentence = self.tokenizer(sentence, return_tensors="pt", padding=False, truncation=False)
+            sentence_length = len(tokenized_sentence['input_ids'][0])
+
+            # Check if adding this sentence would exceed the chunk size
+            if current_length + sentence_length > self.chunk_size:
+                # If yes, tokenize the accumulated chunk and store it
+                concatenated_text = " ".join(current_chunk)
+                tokenized_chunk = self.tokenizer(
+                    concatenated_text,
+                    return_tensors="pt",
+                    padding='max_length',
+                    max_length=self.chunk_size,
+                    truncation=True
+                )
+                chunks.append(tokenized_chunk)
+                current_chunk = []
+                current_length = 0
+
+            # Add the current sentence to the chunk
+            current_chunk.append(sentence)
+            current_length += sentence_length
+        return chunks
     def __len__(self):
         return self.num_chunks
 
     def __getitem__(self, idx):
-        # Step 4: Retrieve a specific chunk based on idx and chunk_size
-        start_idx = idx * self.chunk_size
-        end_idx = start_idx + self.chunk_size
-        
-        # Get the chunk of input_ids, attention_mask, and token_type_ids
-        input_ids_chunk = self.tokenized_data['input_ids'][0][start_idx:end_idx]
-        attention_mask_chunk = torch.ones_like(input_ids_chunk)  # Create attention mask for the chunk
+        # Retrieve the tokenized chunk at the specified index
+        tokenized_chunk = self.tokenized_data[idx]
+
+        # Extract input_ids and attention_mask from the tokenized chunk
+        input_ids_chunk = tokenized_chunk['input_ids'].squeeze()
+        attention_mask_chunk = tokenized_chunk['attention_mask'].squeeze()
 
         # Handle token_type_ids if present
-        token_type_ids_chunk = None
-        if 'token_type_ids' in self.tokenized_data:
-            token_type_ids_chunk = self.tokenized_data['token_type_ids'][0][start_idx:end_idx]
-        
+        token_type_ids_chunk = tokenized_chunk.get('token_type_ids')
+        if token_type_ids_chunk is not None:
+            token_type_ids_chunk = token_type_ids_chunk.squeeze()
+        else:
+            token_type_ids_chunk = torch.zeros_like(input_ids_chunk)
+
         return {
             'input_ids': input_ids_chunk,
             'attention_mask': attention_mask_chunk,
-            'token_type_ids': token_type_ids_chunk if token_type_ids_chunk is not None else torch.zeros_like(input_ids_chunk)
+            'token_type_ids': token_type_ids_chunk
         }
 
 

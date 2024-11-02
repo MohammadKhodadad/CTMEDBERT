@@ -9,7 +9,7 @@ from utils.data import create_txt_from_csv
 
 EPOCHS=1000
 WARM_UP_STEPS= 1000
-TOTAL_STEPS = 1000000
+TOTAL_STEPS = 100000
 SAVE_STEP= 10000
 
 tokenizer = load_tokenizer("bert-base-uncased")
@@ -26,7 +26,7 @@ for epoch in range(EPOCHS):
     model.train()
     for param_group in optimizer.param_groups:
         print(f"Epoch {epoch}: Learning Rate = {param_group['lr']}")
-    progress_bar = tqdm.tqdm(train_loader, desc=f"Epoch {epoch + 1}")
+    progress_bar = tqdm.tqdm(train_loader, desc=f"Epoch {epoch + 1} (Training)")
     for batch in progress_bar:
         batch = {key: batch[key].to(device) for key in batch.keys()}
         outputs = model(**batch)
@@ -38,7 +38,7 @@ for epoch in range(EPOCHS):
         scheduler.step()
         step+=1
         if step>0 and step%SAVE_STEP==0:
-            print('Saving model in step: {step}')
+            print(f'Saving model in step: {step}')
             model.save_pretrained(f'./weights/mlm/step_{step}/')
         avg_loss = total_loss / (progress_bar.n + 1)
         progress_bar.set_postfix({'Step':step,"Loss": avg_loss})

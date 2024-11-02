@@ -10,16 +10,17 @@ from utils.data import create_cl_data_from_csv
 
 EPOCHS=100
 WARM_UP_STEPS= 1000
-TOTAL_STEPS = 1000000
-SAVE_STEP= 10000
+TOTAL_STEPS = 100000
+SAVE_STEP= 5000
 
 tokenizer = load_tokenizer("bert-base-uncased")
-model = Model("bert-base-uncased")
-create_cl_data_from_csv('./data/discharge_processed.csv','./data/','history_of_present_illness','chief_complaint')
-data=pd.read_csv("./data/history_of_present_illness_vs_chief_complaint_cleaned.csv")
-train_dataset, test_dataset = get_contrastive_dataloader(data, tokenizer)
+# model = Model("bert-base-uncased")
+model = Model("/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/mlm/step_60000")
+create_cl_data_from_csv('./data/discharge_processed.csv','./data/','chief_complaint','history_of_present_illness')
+data=pd.read_csv("./data/chief_complaint_vs_history_of_present_illness_cleaned.csv")
+train_loader, test_loader = get_contrastive_dataloader(data, tokenizer)
 criterion = InfoNCELoss()
-optimizer, scheduler = get_optimizer_and_scheduler(model,0.0001,WARM_UP_STEPS, TOTAL_STEPS)
+optimizer, scheduler = get_optimizer_and_scheduler(model,0.00005,WARM_UP_STEPS, TOTAL_STEPS)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 step=0
@@ -28,7 +29,7 @@ for epoch in range(EPOCHS):
     model.train()
     for param_group in optimizer.param_groups:
         print(f"Epoch {epoch}: Learning Rate = {param_group['lr']}")
-        progress_bar = tqdm.tqdm(train_dataset, desc=f"Epoch {epoch + 1}")
+        progress_bar = tqdm.tqdm(train_loader, desc=f"Epoch {epoch + 1} (Training)")
     for batch1, batch2 in progress_bar:
         batch1 = {key: batch1[key].to(device) for key in batch1.keys()}
         batch2 = {key: batch2[key].to(device) for key in batch2.keys()}
@@ -49,7 +50,7 @@ for epoch in range(EPOCHS):
     print(f"Epoch {epoch + 1}, Step: {step}, Loss: {avg_loss}")
     model.eval()
     total_eval_loss = 0
-    progress_bar = tqdm.tqdm(test_dataset, desc=f"Epoch {epoch + 1} (Testing)")
+    progress_bar = tqdm.tqdm(test_loader, desc=f"Epoch {epoch + 1} (Testing)")
     
     with torch.no_grad():
         for batch1, batch2 in progress_bar:

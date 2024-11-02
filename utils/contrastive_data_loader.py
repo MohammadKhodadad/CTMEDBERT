@@ -6,7 +6,9 @@ from torch.utils.data import random_split
 # Step 2: Dataset Class for Contrastive Learning
 class ContrastiveDataset(Dataset):
     def __init__(self, dataframe, tokenizer, max_length=512):
-        self.data = dataframe
+        print(dataframe.shape)
+        self.data = dataframe.dropna()
+        print(dataframe.shape)
         self.tokenizer = tokenizer
         self.max_length = max_length
         print(f"THE NUMBER OF RECORDS: {len(self.data)}")
@@ -36,7 +38,7 @@ class ContrastiveDataset(Dataset):
             'token_type_ids2': inputs2['token_type_ids'].squeeze(),
         }
 
-def collate_fn(batch):
+def collate_func(batch):
     # Separate out input_ids1, attention_mask1, token_type_ids1
     input_ids1 = torch.stack([item['input_ids1'] for item in batch])
     attention_mask1 = torch.stack([item['attention_mask1'] for item in batch])
@@ -60,11 +62,10 @@ def collate_fn(batch):
         'attention_mask': attention_mask2,
         'token_type_ids': token_type_ids2
     }
-
     return batch1, batch2
 
 # Step 3: DataLoader Function
-def get_contrastive_dataloader(dataframe,tokenizer, batch_size=32, max_length=512):
+def get_contrastive_dataloader(dataframe,tokenizer, batch_size=64, max_length=512):
     dataset = ContrastiveDataset(dataframe, tokenizer=tokenizer, max_length=max_length)
     train_size = int(0.8 * len(dataset))  # 80% for training
     test_size = len(dataset) - train_size  # 20% for testing
@@ -73,10 +74,10 @@ def get_contrastive_dataloader(dataframe,tokenizer, batch_size=32, max_length=51
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
     # Create DataLoaders for train and test sets
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=data_collator)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=data_collator)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_func)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_func)
 
-    return train_dataset, test_dataset
+    return train_loader, test_loader
 
 # Step 4: Test the DataLoader
 if __name__ == "__main__":

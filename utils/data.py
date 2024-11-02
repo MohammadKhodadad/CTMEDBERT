@@ -12,7 +12,7 @@ def clean_text(text):
     
     # Normalize whitespace
     text = re.sub(r'\s+', ' ', text).strip()
-    
+    text = re.sub(r'\n+', ' ', text) #REPLACED \n with ' '
     return text
 
 def create_txt_from_csv(csv_address, target_directory):
@@ -36,7 +36,7 @@ def create_txt_from_csv(csv_address, target_directory):
         for idx, row in tqdm.tqdm(df_selected.iterrows()):
             concatenated_text = ' '.join(row.values.astype(str))
             cleaned_text = clean_text(concatenated_text)
-            file.write(cleaned_text+'\n')
+            file.write(cleaned_text+' ') #REPLACED \n with ' '
 
     return f"Text files created in {target_directory}"
 
