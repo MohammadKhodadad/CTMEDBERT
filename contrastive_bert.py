@@ -43,7 +43,7 @@ for epoch in range(EPOCHS):
         scheduler.step()
         step+=1
         if step>0 and step%SAVE_STEP==0:
-            print('Saving model in step: {step}')
+            print(f'Saving model in step: {step}')
             model.save_pretrained(f'./weights/contrastive/step_{step}/')
         avg_loss = total_loss / (progress_bar.n + 1)
         progress_bar.set_postfix({'Step':step,"Loss": avg_loss})
