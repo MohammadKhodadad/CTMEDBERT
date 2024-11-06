@@ -6,4 +6,6 @@
 
 3) Add Features from related papers
 
-4) Each heading of patient notes is converted to a column - Done.
+4) Each heading of patient notes is converted to a column, Code pushed to this repository. - Pankaj (Done).
+
+5) Create a test dataset and method to evaluate the models. - Pankaj (Working).
