@@ -18,6 +18,15 @@ def main():
     python3 main.py -f -d /Users/../SO_Data
     :return:
     """
+
+    # These names are extracted from notes.
+    col_names = ["Name", "Unit No", "Admission Date", "Discharge Date", "Date of Birth", "Sex", "Service", "Allergies",
+                 "Attending", "Chief Complaint", "Major Surgical or Invasive Procedure", "History of Present Illness",
+                 "Past Medical History", "Social History", "Family History", "Physical Exam", "Discharge",
+                 "Pertinent Results", "CXR", "U/S", "Brief Hospital Course", "Medications on Admission",
+                 "Discharge Medications", "Discharge Disposition", "Discharge Diagnosis", "Discharge Condition",
+                 "Discharge Instructions", "Followup Instructions"]
+
     args = read_arguments()
 
     # Create output directories.
@@ -31,7 +40,8 @@ def main():
 
     # Processes discharge data from csv files.
     discharge_dataframe = data_read_discharge_file_chunks_csv(args, chunk_size=1000)
-    cleaned_discharge_dataframe = clean_discharge_in_chunks(args, discharge_dataframe)
+    cleaned_discharge_dataframe = clean_discharge_in_chunks(args, discharge_dataframe, col_names)
+    cleaned_discharge_dataframe = cleaned_discharge_dataframe.drop(columns=['text'])
     data_write_discharge_file_processed(args, cleaned_discharge_dataframe)
 
 

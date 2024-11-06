@@ -6,4 +6,4 @@
 
 3) Add Features from related papers
 
-4) ...
+4) Each heading of patient notes is converted to a column - Done.
