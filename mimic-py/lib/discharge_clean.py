@@ -115,7 +115,7 @@ def clean_discharge_in_chunks(args, discharge_df, col_names):
 
     for chunk in discharge_df:
         start_time = time.time()
-        chunk = chunk.copy().apply(get_process_columns_split(col_names), axis=1)
+        chunk = chunk.apply(get_process_columns_split(col_names), axis=1)
 
         print(f"Processed chunk no: {chunk_no}")
         print("Seconds taken: %s" % (time.time() - start_time))
