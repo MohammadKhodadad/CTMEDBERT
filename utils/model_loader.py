@@ -16,9 +16,21 @@ class Model(nn.Module):  # Inherit from torch.nn.Module
             raise Exception('task has to be mlm or contastive.')
 
 
-    def encode(self, inputs_):
+    def encode(self, inputs_, use_cls=True):
+        # Forward pass to get the model outputs
         outputs = self.model(**inputs_)
-        return outputs.last_hidden_state[:, 0, :]
+
+        # Extract the token embeddings from the model's output
+        token_embeddings = outputs.last_hidden_state
+        if use_cls:
+            cls_embedding = token_embeddings[:, 0, :]
+            return cls_embedding
+        else:
+
+            attention_mask = inputs_['attention_mask'].unsqueeze(-1)
+            masked_embeddings = token_embeddings * attention_mask
+            mean_embedding = masked_embeddings.sum(dim=1) / attention_mask.sum(dim=1)
+            return mean_embedding
 
     def save_weights(self, save_path):
         if  not os.path.exists('./weights') :

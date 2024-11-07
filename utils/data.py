@@ -45,7 +45,19 @@ def create_cl_data_from_csv(csv_address, target_directory, col1, col2):
     # Read the CSV file
     base_name = os.path.basename(csv_address).replace('.csv', '')
     df = pd.read_csv(csv_address)
+    if type(col1)==list:
+        col=df[col1[0]]
+        for i in range(1,len(col1)):
+            col=col+df[col1[i]]
+        df["_and_".join(col1)]=col
+        col1 = "_and_".join(col1)
     
+    if type(col2)==list:
+        col=df[col2[0]]
+        for i in range(1,len(col2)):
+            col=col+df[col2[i]]
+        df["_and_".join(col2)]=col
+        col2 = "_and_".join(col2)
     # Select the two columns provided for contrastive learning
     df_selected = df[[col1, col2]]
     print(f"shape before dropping nones: {df_selected.shape}")
