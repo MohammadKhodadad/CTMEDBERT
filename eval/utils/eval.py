@@ -1,87 +1,54 @@
 import torch
 from mteb import MTEB
-from mteb.tasks import CustomTask
+from mteb.tasks import AbsTaskReranking
 from transformers import AutoTokenizer, AutoModel
 
-
-def load_model_and_tokenizer(model_path_or_name='bert-base-uncased', tokenizer_path_or_name='bert-base-uncased'):
-    """
-    Loads the model and tokenizer from a given path or model name.
-    
-    Args:
-        model_path_or_name (str): Path to the model directory or model name from Hugging Face.
-    
-    Returns:
-        model: The loaded Hugging Face model.
-        tokenizer: The loaded Hugging Face tokenizer.
-    """
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path_or_name)
+# Function to load the model and tokenizer
+def load_model_and_tokenizer(model_path_or_name='bert-base-uncased'):
+    tokenizer = AutoTokenizer.from_pretrained(model_path_or_name)
     model = AutoModel.from_pretrained(model_path_or_name)
     return model, tokenizer
 
+# Custom task for reranking
+class CustomRerankingTask(AbsTaskReranking):
+    def __init__(self, data, model, tokenizer, **kwargs):
+        super().__init__(**kwargs)
+        self.description = "Custom reranking task for medical queries"
+        self.data = data
+        self.model = model
+        self.tokenizer = tokenizer
 
-def evaluate_model_for_retrieval(model, tokenizer, data, pooling_type='mean'):
-    """
-    Evaluates a given model and tokenizer on a retrieval task using MTEB, with support for mean pooling or CLS pooling.
-    
-    Args:
-        model: The Hugging Face model to use for embeddings.
-        tokenizer: The Hugging Face tokenizer to use for embeddings.
-        data: Custom data for the retrieval task, formatted as a list of (query, document, label) tuples.
-              - Example: [("query1", "document1", label1), ("query2", "document2", label2), ...]
-        pooling_type (str): The type of pooling to use for sentence embeddings ('mean' or 'cls').
-    
-    Returns:
-        None. Runs the MTEB evaluation and prints the results.
-    """
-    # Define the embedding function
-    def embed_texts(texts):
-        # Tokenize input texts
-        inputs = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
-        # Forward pass through the model
+    def load_data(self):
+        # Format the data as needed by MTEB
+        self.corpus = [{"text": doc} for query, doc, _ in self.data]
+        self.queries = [{"text": query} for query, _, _ in self.data]
+        self.relevant_docs = {i: [i] for i in range(len(self.data))}
+
+    def encode_texts(self, texts):
+        # Generate embeddings using the model and tokenizer
+        inputs = self.tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
         with torch.no_grad():
-            outputs = model(**inputs)
-        
-        # Apply the selected pooling method
-        if pooling_type == 'mean':
-            # Mean pooling
-            embeddings = outputs.last_hidden_state.mean(dim=1)
-        elif pooling_type == 'cls':
-            # CLS pooling: use the embeddings of the [CLS] token
-            embeddings = outputs.last_hidden_state[:, 0, :]
-        else:
-            raise ValueError("Invalid pooling_type. Choose either 'mean' or 'cls'.")
-        
-        return embeddings.numpy()
+            embeddings = self.model(**inputs).last_hidden_state.mean(dim=1)
+        return embeddings.cpu().numpy()
 
-    # Create a custom task class for retrieval
-    class MyRetrievalTask(CustomTask):
-        def __init__(self, data):
-            super().__init__()
-            self.data = data
-        
-        def load_data(self):
-            return self.data
+# Function to evaluate the model
+def evaluate_model_for_retrieval(model, tokenizer, data):
+    # Create and initialize the custom task
+    custom_task = CustomRerankingTask(data=data, model=model, tokenizer=tokenizer)
+    custom_task.load_data()
 
-    # Initialize the custom retrieval task
-    my_task = MyRetrievalTask(data)
+    # Initialize the MTEB benchmark and run the evaluation
+    mteb = MTEB(tasks=[custom_task])
+    results = mteb.run(models={"model": model, "tokenizer": tokenizer})
+    print("Evaluation results:", results)
 
-    # Initialize the MTEB benchmark with the retrieval task
-    benchmark = MTEB(tasks=[my_task])
-
-    # Run the benchmark using the embedding function
-    results= benchmark.run(embed_texts)
-    print(results)
-
-
-
-
+    
 if __name__ == "__main__":
     # Load model and tokenizer
-    model_path_or_name = "sentence-transformers/all-MiniLM-L6-v2"  # Or a directory path to your model
-    model, tokenizer = load_model_and_tokenizer(model_path_or_name,model_path_or_name)
+    model_path_or_name = "sentence-transformers/all-MiniLM-L6-v2"
+    model, tokenizer = load_model_and_tokenizer(model_path_or_name)
 
-    # Example data for a retrieval task: (query, document, label)
+    # Example data for the reranking task: (query, document, label)
     my_data = [
     ("What is diabetes?", "Diabetes is a chronic condition that affects how the body processes blood sugar.", 1),
     ("What are the symptoms of a heart attack?", "Symptoms of a heart attack include chest pain, shortness of breath, and nausea.", 1),
