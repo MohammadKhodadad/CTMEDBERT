@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Any
 import datasets
+import json
+import pandas as pd
 from datasets import Dataset
 from datasets import Dataset, DatasetDict
 from mteb.abstasks.AbsTaskRetrieval import AbsTaskRetrieval
@@ -11,9 +13,9 @@ import pandas as pd
 from mteb import MTEB, get_model
 from transformers import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer, models
-class MIMICIVRetrieval(AbsTaskRetrieval):
+class PubMedTitleAbsRetrieval(AbsTaskRetrieval):
     metadata = TaskMetadata(
-        name="MIMICIVRetrieval",
+        name="PubMedTitleAbsRetrieval",
         dataset={"path": "",
                  "revision": " ",
 
@@ -42,9 +44,9 @@ class MIMICIVRetrieval(AbsTaskRetrieval):
       """Load dataset from HuggingFace hub or use sample data"""
       if self.data_loaded:
           return
-      data = pd.read_csv('/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/data/chief_complaint_vs_history_of_present_illness_cleaned.csv')
-      data=data.dropna()
-      data=data.sample(500)
+
+      with open("/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/eval/dev/medical_data.json", "r", encoding="utf-8") as file:
+          data = json.load(file)
       self.corpus = {
           "test": {}}
       self.queries = {
@@ -52,13 +54,18 @@ class MIMICIVRetrieval(AbsTaskRetrieval):
       self.relevant_docs = {
           "test": {}}
 
-
-      for i in range(data.shape[0]):
-        row=data.iloc[i]
-        self.corpus['test'][f'doc_{i}']={"_id": f"d{i}", "title": "", "text": row['sentence2']}
-        self.queries['test'][f'q_{i}']=row['sentence1']
-        self.relevant_docs['test'][f'q_{i}']={f"doc_{i}":1}
-
+      for i, article in enumerate(data):
+        # Extract the title and abstract
+        try:
+          title = article.get("title", "").strip()
+          abstract = article.get("abstract", "").strip()
+        except:
+          pass
+        # Fill in the corpus, queries, and relevant docs
+        if title and abstract:
+          self.corpus["test"][f"doc_{i}"] = {"_id": f"d{i}", "title": title, "text": abstract}
+          self.queries["test"][f"q_{i}"] = title
+          self.relevant_docs["test"][f"q_{i}"] = {f"doc_{i}": 1}
       self.data_loaded = True
 
     def dataset_transform(self):
@@ -69,14 +76,14 @@ class MIMICIVRetrieval(AbsTaskRetrieval):
       pass
 
 if __name__ == "__main__":
-    task = MIMICIVRetrieval()
+    task = PubMedTitleAbsRetrieval()
     mteb = MTEB(tasks=[task])
     # model = get_model("bert-base-uncased")
     # model = get_model("sentence-transformers/all-MiniLM-L6-v2")
     # model = get_model('intfloat/e5-base')
     # model = get_model("medicalai/ClinicalBERT")
     # model = get_model("nomic-ai/nomic-embed-text-v1")
-    # model = get_model("emilyalsentzer/Bio_ClinicalBERT")
+    model = get_model("emilyalsentzer/Bio_ClinicalBERT")
     # model = get_model('kamalkraj/BioSimCSE-BioLinkBERT-BASE')
     # model = get_model('malteos/scincl')
     
@@ -90,14 +97,14 @@ if __name__ == "__main__":
     #     pooling_mode_max_tokens=False
     # )
 
-    transformer= models.Transformer('/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/contrastive/step_45000',tokenizer_name_or_path ='bert-base-uncased')
-    pooling_model = models.Pooling(
-        transformer.get_word_embedding_dimension(),
-        pooling_mode_cls_token=True,  # Use CLS token for pooling
-        pooling_mode_mean_tokens=False,
-        pooling_mode_max_tokens=False
-    )
-    model = SentenceTransformer(modules=[transformer, pooling_model])
+    # transformer= models.Transformer('/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/contrastive/step_45000',tokenizer_name_or_path ='bert-base-uncased')
+    # pooling_model = models.Pooling(
+    #     transformer.get_word_embedding_dimension(),
+    #     pooling_mode_cls_token=True,  # Use CLS token for pooling
+    #     pooling_mode_mean_tokens=False,
+    #     pooling_mode_max_tokens=False
+    # )
+    # model = SentenceTransformer(modules=[transformer, pooling_model])
     results = mteb.run(model)
     print("Evaluation results:", results)
     # for task in results:
