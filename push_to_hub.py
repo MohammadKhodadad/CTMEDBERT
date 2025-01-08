@@ -2,19 +2,19 @@ from transformers import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer, models
 
 # Define paths
-hf_address = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/mlm/step_60000"
+# hf_address = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/contrastive/step_45000"
 tokenizer_name = "bert-base-uncased"
-model = AutoModel.from_pretrained(hf_address)
+# model = AutoModel.from_pretrained(hf_address)
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-repo_name = "skyfury/CTMEDBERT-step60000"
+# repo_name = "skyfury/CTMEDBERT-cl-step_45000"
 
 
-model.push_to_hub(repo_name)
-tokenizer.push_to_hub(repo_name)
+# model.push_to_hub(repo_name)
+# tokenizer.push_to_hub(repo_name)
 
 
 # Step 1: Load the transformer model
-model_name = "skyfury/CTMEDBERT-step60000"
+model_name = "skyfury/CTMEDBERT-cl-step_45000"
 transformer = models.Transformer(model_name)
 
 # Step 2: Define a pooling layer using the CLS token
@@ -30,3 +30,7 @@ sentence_transformer_model = SentenceTransformer(modules=[transformer, pooling])
 
 # Step 4: Name your model
 model_save_name = "skyfury/CTMEDBERT_CLS_Encoder"
+
+
+sentence_transformer_model.push_to_hub(model_save_name)
+tokenizer.push_to_hub(model_save_name)
