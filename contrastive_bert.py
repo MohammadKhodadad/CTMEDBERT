@@ -6,7 +6,7 @@ from utils.tokenizer_loader import load_tokenizer
 from utils.loss import InfoNCELoss
 from utils.contrastive_data_loader import get_contrastive_dataloader
 from utils.optimizer import get_optimizer_and_scheduler
-from utils.data import create_cl_data_from_csv
+from utils.data.mimic import create_mimic_cl_data_from_csv
 
 EPOCHS=100
 WARM_UP_STEPS= 1000
@@ -16,7 +16,7 @@ SAVE_STEP= 5000
 tokenizer = load_tokenizer("bert-base-uncased")
 # model = Model("bert-base-uncased")
 model = Model("/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/mlm/step_60000")
-create_cl_data_from_csv('./data/discharge_processed.csv','./data/','discharge_diagnosis',['chief_complaint','history_of_present_illness'])
+create_mimic_cl_data_from_csv('./data/discharge_processed.csv','./data/','discharge_diagnosis',['chief_complaint','history_of_present_illness'])
 # data=pd.read_csv("./data/chief_complaint_vs_history_of_present_illness_cleaned.csv")
 data=pd.read_csv("./data/discharge_diagnosis_vs_chief_complaint_and_history_of_present_illness_cleaned.csv")
 train_loader, test_loader = get_contrastive_dataloader(data, tokenizer)

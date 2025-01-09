@@ -5,7 +5,7 @@ from utils.model_loader import Model
 from utils.tokenizer_loader import load_tokenizer
 from utils.mlm_data_loader import get_mlm_dataloader
 from utils.optimizer import get_optimizer_and_scheduler
-from utils.data import create_txt_from_csv
+from utils.data.mimic import create_mimic_txt_from_csv
 
 EPOCHS=1000
 WARM_UP_STEPS= 1000
@@ -14,7 +14,7 @@ SAVE_STEP= 10000
 
 tokenizer = load_tokenizer("bert-base-uncased")
 model = Model("bert-base-uncased",task='mlm')
-create_txt_from_csv('./data/discharge_processed.csv','./data/')
+create_mimic_txt_from_csv('./data/discharge_processed.csv','./data/')
 train_loader,test_loader = get_mlm_dataloader('./data', tokenizer)
 
 optimizer, scheduler = get_optimizer_and_scheduler(model,0.00005,WARM_UP_STEPS, TOTAL_STEPS)
