@@ -1,6 +1,7 @@
 *.pyc
 cache/
 data/
+created_data/
 weights/
 *.json
 *.csv
