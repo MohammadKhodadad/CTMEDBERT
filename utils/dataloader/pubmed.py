@@ -21,12 +21,14 @@ def pubmed_get_article_details(pmid):
         "Abstract": abstract,
     }
 
-def fetch_pubmed_abstracts(query, email, max_results=100, year=2024):
+def fetch_pubmed_abstracts(query = '("Therapeutics"[MeSH Terms] OR "Epidemiology"[MeSH Terms] OR "Pathology"[MeSH Terms])', max_results=100, year=2024):
 
-    Entrez.email = email
+    Entrez.email = "your_email@example.com"
 
     # Search PubMed for the query
     query_with_year = f"{query} AND {year}[DP]"
+    print('This is the query:')
+    print(query_with_year)
     handle = Entrez.esearch(db="pubmed", term=query_with_year, retmax=max_results)
     record = Entrez.read(handle)
     handle.close()
@@ -81,17 +83,22 @@ def save_abstracts_for_contrastive(abstracts, output_dir="data",name="no_name"):
     output_file = os.path.join(output_dir, f"pubmed_cl_{name}.csv")
     df = pd.DataFrame(abstracts)
     df = df[df["Title"].notna() & df["Abstract"].notna()]  # Filter out rows with missing data
+    df=df.rename(columns={'Title':'sentence1','Abstract':'sentence2'})
     df.to_csv(output_file, index=False, columns=["sentence1", "sentence2"], encoding="utf-8")
 
     print(f"Contrastive learning data saved to {output_file}")
 
+def download_pubmed_mlm(output_dir,max_results=10000,query = '("Therapeutics"[MeSH Terms] OR "Epidemiology"[MeSH Terms] OR "Pathology"[MeSH Terms])'):
+    year = 2024
+    pubmed_abstracts = fetch_pubmed_abstracts(query, max_results, year)
+    save_abstracts_for_mlm(pubmed_abstracts,output_dir= output_dir,name=query.replace(' ','_'))
+
 if __name__ == "__main__":
     # Example query
-    query = "Cancer"
-    email = "your_email@example.com"  # Replace with your email
+    query = '("Therapeutics"[MeSH Terms] OR "Epidemiology"[MeSH Terms] OR "Pathology"[MeSH Terms])'
     max_results = 2
     year = 2024
 
-    pubmed_abstracts = fetch_pubmed_abstracts(query, email, max_results, year)
-    save_abstracts_for_mlm(pubmed_abstracts,name=query.replace(' ','_'))
-    save_abstracts_for_contrastive(pubmed_abstracts,name=query.replace(' ','_'))
+    pubmed_abstracts = fetch_pubmed_abstracts(query, max_results, year)
+    save_abstracts_for_mlm(pubmed_abstracts,output_dir= 'created_data',name=query.replace(' ','_'))
+    save_abstracts_for_contrastive(pubmed_abstracts,output_dir='created_data',name=query.replace(' ','_'))
