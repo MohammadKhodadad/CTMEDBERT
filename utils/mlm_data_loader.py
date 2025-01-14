@@ -30,9 +30,12 @@ class TokenizedChunkedDataset(Dataset):
         print(f"THE NUMBER OF CHUNKS: {self.num_chunks}")
     def load_all_text_files(self):
         full_text = ""
+        print("Loaded Files")
+        print(self.files)
         for file in self.files:
             with open(file, 'r', encoding='utf-8') as f:
                 full_text += f.read() + " "  # Concatenate all the text files into a single text
+            print(len(full_text))
         return full_text
 
     def tokenize_full_text(self):
@@ -48,7 +51,7 @@ class TokenizedChunkedDataset(Dataset):
 
         for sentence in tqdm.tqdm(sentences):
             # Tokenize the current sentence without truncation
-            tokenized_sentence = self.tokenizer(sentence, return_tensors="pt", padding=False, truncation=False)
+            tokenized_sentence = self.tokenizer(sentence, return_tensors="pt", padding=False, truncation=False) #IMPORTANT# todo: Don't add special tokens.
             sentence_length = len(tokenized_sentence['input_ids'][0])
 
             # Check if adding this sentence would exceed the chunk size

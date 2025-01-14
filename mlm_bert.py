@@ -11,7 +11,7 @@ from utils.dataloader.trialsgov import create_trials_mlm_data
 
 EPOCHS=1000
 WARM_UP_STEPS= 1000
-TOTAL_STEPS = 100000
+TOTAL_STEPS = 200000
 SAVE_STEP= 10000
 
 tokenizer = load_tokenizer("bert-base-uncased")
@@ -22,7 +22,7 @@ model = Model("bert-base-uncased",task='mlm')
 # download_pubmed_mlm('./data/txts')
 # print('Handling Trials Data')
 # create_trials_mlm_data('./data/clinical_trials_all_studies.csv','./data/txts')
-train_loader,test_loader = get_mlm_dataloader('./data/txts', tokenizer)
+train_loader,test_loader = get_mlm_dataloader('./data/txts', tokenizer,batch_size=80)
 
 optimizer, scheduler = get_optimizer_and_scheduler(model,0.00005,WARM_UP_STEPS, TOTAL_STEPS)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
