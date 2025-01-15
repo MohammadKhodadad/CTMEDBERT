@@ -22,7 +22,7 @@ model = Model("bert-base-uncased",task='mlm')
 # download_pubmed_mlm('./data/txts')
 # print('Handling Trials Data')
 # create_trials_mlm_data('./data/clinical_trials_all_studies.csv','./data/txts')
-train_loader,test_loader = get_mlm_dataloader('./data/txts', tokenizer,batch_size=80)
+train_loader,test_loader = get_mlm_dataloader('./data/txts', tokenizer,batch_size=64)
 
 optimizer, scheduler = get_optimizer_and_scheduler(model,0.00005,WARM_UP_STEPS, TOTAL_STEPS)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

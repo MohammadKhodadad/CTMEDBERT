@@ -93,6 +93,11 @@ def download_pubmed_mlm(output_dir,max_results=10000,query = '("Therapeutics"[Me
     pubmed_abstracts = fetch_pubmed_abstracts(query, max_results, year)
     save_abstracts_for_mlm(pubmed_abstracts,output_dir= output_dir,name=query.replace(' ','_'))
 
+def download_pubmed_cl(output_dir,max_results=10000,query = '("Therapeutics"[MeSH Terms] OR "Epidemiology"[MeSH Terms] OR "Pathology"[MeSH Terms])'):
+    year = 2024
+    pubmed_abstracts = fetch_pubmed_abstracts(query, max_results, year)
+    save_abstracts_for_contrastive(pubmed_abstracts,output_dir= output_dir,name=query.replace(' ','_'))
+
 if __name__ == "__main__":
     # Example query
     query = '("Therapeutics"[MeSH Terms] OR "Epidemiology"[MeSH Terms] OR "Pathology"[MeSH Terms])'

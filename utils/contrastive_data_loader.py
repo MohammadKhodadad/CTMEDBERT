@@ -5,10 +5,19 @@ import torch
 from torch.utils.data import random_split
 # Step 2: Dataset Class for Contrastive Learning
 class ContrastiveDataset(Dataset):
-    def __init__(self, dataframe, tokenizer, max_length=512):
-        print(dataframe.shape)
-        self.data = dataframe.dropna()
-        print(dataframe.shape)
+    def __init__(self, directory_path, tokenizer, max_length=512):
+        self.files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.endswith('.csv')]
+        data_list=[]
+        for address in self.files:
+            temp_data=pd.read_csv(address)
+            temp_data= temp_data.dropna()
+            print(temp_data.shape)
+            data_list.append(temp_data)
+
+        self.data = pd.concat(data_list,axis=0)
+        print(self.data.shape)
+        self.data=self.data.dropna().reset_index(drop=True)
+        print(self.data.shape)
         self.tokenizer = tokenizer
         self.max_length = max_length
         print(f"THE NUMBER OF RECORDS: {len(self.data)}")
