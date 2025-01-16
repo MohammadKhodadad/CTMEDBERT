@@ -99,7 +99,24 @@ class TokenizedChunkedDataset(Dataset):
 
 
 # Step 2: DataLoader function for efficient retrieval
-def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=512,mlm_probability=0.15):
+# def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=512,mlm_probability=0.15):
+#     data_collator = DataCollatorForLanguageModeling(
+#         tokenizer=tokenizer, mlm=True, mlm_probability=mlm_probability
+#     )
+#     dataset = TokenizedChunkedDataset(directory_path, tokenizer=tokenizer, chunk_size=max_length)
+#     train_size = int(0.8 * len(dataset))  # 80% for training
+#     test_size = len(dataset) - train_size  # 20% for testing
+
+#     # Split the dataset
+#     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+
+#     # Create DataLoaders for train and test sets
+#     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=data_collator)
+#     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=data_collator)
+#     return train_loader,test_loader
+
+
+def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=512, mlm_probability=0.15, distributed=False, rank=0, world_size=1):
     data_collator = DataCollatorForLanguageModeling(
         tokenizer=tokenizer, mlm=True, mlm_probability=mlm_probability
     )
@@ -110,10 +127,15 @@ def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=512,
     # Split the dataset
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
+    # Use DistributedSampler if in distributed mode
+    train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank) if distributed else None
+    test_sampler = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank) if distributed else None
+
     # Create DataLoaders for train and test sets
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=data_collator)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=data_collator)
-    return train_loader,test_loader
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=(not distributed), sampler=train_sampler, collate_fn=data_collator)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, collate_fn=data_collator)
+    
+    return train_loader, test_loader
 
 
 # Step 3: Example usage
