@@ -7,12 +7,14 @@ from utils.tokenizer_loader import load_tokenizer
 from utils.mlm_data_loader import get_mlm_dataloader
 from utils.optimizer import get_optimizer_and_scheduler
 
+deepspeed.init_distributed(dist_backend='nccl')
+
 # Hyperparameters
 EPOCHS = 1000
 WARM_UP_STEPS = 1000
 TOTAL_STEPS = 200000
 SAVE_STEP = 10000
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 LEARNING_RATE = 5e-5
 
 # Load tokenizer and model
@@ -20,10 +22,10 @@ tokenizer = load_tokenizer("bert-base-uncased")
 model = Model("bert-base-uncased", task='mlm')
 
 # Load dataset
-train_loader, test_loader = get_mlm_dataloader('./data/txts', tokenizer, batch_size=BATCH_SIZE)
+train_loader, test_loader = get_mlm_dataloader('./data/txts', tokenizer, batch_size=BATCH_SIZE, distributed=True)
 
 # Configure optimizer and scheduler
-optimizer, scheduler = get_optimizer_and_scheduler(model, lr=LEARNING_RATE, warmup_steps=WARM_UP_STEPS, total_steps=TOTAL_STEPS)
+optimizer, scheduler = get_optimizer_and_scheduler(model, base_lr=LEARNING_RATE, warmup_steps=WARM_UP_STEPS, total_steps=TOTAL_STEPS)
 
 # DeepSpeed configuration (NO Gradient Accumulation, No ZeRO)
 ds_config = {
@@ -37,7 +39,7 @@ ds_config = {
 model, optimizer, _, _ = deepspeed.initialize(
     model=model,
     optimizer=optimizer,
-    lr_scheduler = scheduler
+    # lr_scheduler = scheduler,
     model_parameters=model.parameters(),
     config=ds_config
 )
@@ -53,7 +55,7 @@ for epoch in range(EPOCHS):
     for param_group in optimizer.param_groups:
         print(f"Epoch {epoch}: Learning Rate = {param_group['lr']}")
     
-    progress_bar = tqdm.tqdm(train_loader, desc=f"Epoch {epoch + 1} (Training)")
+    progress_bar = tqdm.tqdm(train_loader, desc=f"Epoch {epoch + 1} (Training)") # disable=(model.local_rank  != 0)
     
     for batch in progress_bar:
         batch = {key: batch[key].to(device) for key in batch.keys()}
@@ -64,13 +66,15 @@ for epoch in range(EPOCHS):
         
         model.backward(loss)
         model.step()
+        scheduler.step()
 
         step += 1
         total_loss += loss.item()
         avg_loss = total_loss / (progress_bar.n + 1)
         progress_bar.set_postfix({'Step': step, "Loss": avg_loss})
-        
-        if step > 0 and step % SAVE_STEP == 0:
+        if step%200==0:
+            print(f"Step: {step}", flush=True)
+        if step > 0 and step % SAVE_STEP == 0 and model.local_rank == 0:
             print(f'Saving model at step: {step}')
             model.save_checkpoint(f'./weights/mlm/step_{step}/')
     

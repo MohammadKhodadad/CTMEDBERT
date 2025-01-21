@@ -5,7 +5,8 @@ import nltk
 # nltk.download('punkt_tab')
 import torch
 import pickle
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, DistributedSampler
+import torch.distributed as dist
 from transformers import DataCollatorForLanguageModeling
 from torch.utils.data import random_split
 from nltk.tokenize import sent_tokenize
@@ -20,7 +21,7 @@ class TokenizedChunkedDataset(Dataset):
         # Step 1: Load and concatenate all text files
         self.full_text = self.load_all_text_files()
         # print(f"full_text: {len(self.full_text)}")
-        # self.full_text = self.full_text [:10000000]
+        # self.full_text = self.full_text [:2000000]
         print(f"full_text: {len(self.full_text)}")
         # Step 2: Tokenize the full concatenated text without truncation
         self.tokenized_data = self.tokenize_full_text()
@@ -116,7 +117,7 @@ class TokenizedChunkedDataset(Dataset):
 #     return train_loader,test_loader
 
 
-def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=512, mlm_probability=0.15, distributed=False, rank=0, world_size=1):
+def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=512, mlm_probability=0.15, distributed=False):
     data_collator = DataCollatorForLanguageModeling(
         tokenizer=tokenizer, mlm=True, mlm_probability=mlm_probability
     )
@@ -126,15 +127,15 @@ def get_mlm_dataloader(directory_path, tokenizer, batch_size=32, max_length=512,
 
     # Split the dataset
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
-
+    print('number of records:',len(dataset))
     # Use DistributedSampler if in distributed mode
-    train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank) if distributed else None
-    test_sampler = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank) if distributed else None
+    train_sampler = DistributedSampler(train_dataset) if distributed else None
+    test_sampler = DistributedSampler(test_dataset) if distributed else None
 
     # Create DataLoaders for train and test sets
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=(not distributed), sampler=train_sampler, collate_fn=data_collator)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, collate_fn=data_collator)
-    
+    print(f'number of batches:{len(train_loader)}x{batch_size} or {len(train_dataset)*batch_size} records', flush=True)
     return train_loader, test_loader
 
 

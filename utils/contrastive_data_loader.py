@@ -103,8 +103,8 @@ def get_contrastive_dataloader(dataframe,tokenizer, batch_size=32, max_length=51
     test_sampler = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank) if distributed else None
 
     # Create DataLoaders for train and test sets
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=(not distributed), sampler=train_sampler, collate_fn=data_collator)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, collate_fn=data_collator)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=(not distributed), sampler=train_sampler, collate_fn=collate_func)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, sampler=test_sampler, collate_fn=collate_func)
 
     return train_loader, test_loader
 

@@ -17,7 +17,7 @@ SAVE_STEP= 5000
 
 tokenizer = load_tokenizer("bert-base-uncased")
 # model = Model("bert-base-uncased")
-model = Model("/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/mlm/step_60000")
+model = Model("/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/mlm/step_130000")
 # print('Handling Mimic Data')
 # create_mimic_cl_data_from_csv('./data/discharge_processed.csv','./data/csvs','discharge_diagnosis',['chief_complaint','history_of_present_illness'])
 # print('Handling PubMed Data')
