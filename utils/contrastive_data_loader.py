@@ -11,7 +11,7 @@ class ContrastiveDataset(Dataset):
         self.files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.endswith('.csv')]
         data_list=[]
         for address in self.files:
-            temp_data=pd.read_csv(address).iloc[:512]
+            temp_data=pd.read_csv(address)
             temp_data= temp_data.dropna()
             print(temp_data.shape)
             data_list.append(temp_data)

@@ -13,29 +13,54 @@ from utils.dataloader.pubmed import download_pubmed_cl
 from utils.dataloader.trialsgov import create_trials_contrastive_learning_data
 from utils.optimizer import get_optimizer_and_scheduler
 
-# DeepSpeed configuration
-DS_CONFIG = {
-    "train_batch_size": 64,  # Adjust batch size as per GPU memory
-    "fp16": {"enabled": True},
-    "zero_optimization": {
-        "stage": 2,  # ZeRO stage 2 optimization
-        "offload_optimizer": {"device": "cpu", "pin_memory": True},
-    },
-    "gradient_accumulation_steps": 8,  # Accumulate gradients to simulate larger batch sizes
-}
+# DeepSpeed configuration without ZeRO optimization and gradient accumulation
+# DS_CONFIG = {
+#     "train_batch_size": 128,  # Adjust batch size as per GPU memory
+#     "fp16": {"enabled": True}
+# }
 
 EPOCHS = 100
-SAVE_STEP = 5000
+SAVE_STEP = 2000
 WARM_UP_STEPS = 1000
 TOTAL_STEPS = 100000
 LEARNING_RATE = 0.00005
+BATCH_SIZE = 100  # Ensure batch size is consistent
+
+DS_CONFIG = {
+    "train_batch_size": BATCH_SIZE,  
+    "bf16": {"enabled": True},
+    # "zero_optimization": {
+    #     "stage": 2,  # ZeRO-2 for performance and memory optimization
+    #     "offload_optimizer": {"device": "none"},  # Keep optimizer on GPU
+    #     "offload_param": {"device": "none"}  # Keep parameters on GPU
+    # },
+    "optimizer": {
+        "type": "AdamW",
+        "params": {
+            "lr": 0.00005,  # Learning rate
+            "betas": [0.9, 0.999],
+            "eps": 1e-8,
+            "weight_decay": 0.01
+        }
+    },
+    "scheduler": {
+        "type": "WarmupLR",
+        "params": {
+            "warmup_min_lr": 0,
+            "warmup_max_lr": 0.00005,  # Max LR after warmup
+            "warmup_num_steps": 1000  # Warmup steps
+        }
+    },
+}
+
+
 
 # Load tokenizer and model
 tokenizer = load_tokenizer("bert-base-uncased")
 model = Model("/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/mlm/step_130000")
 
-# Load data
-train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer)
+# Load data with specified batch size
+train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE)
 
 # Loss function
 criterion = InfoNCELoss()
@@ -43,15 +68,21 @@ criterion = InfoNCELoss()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Get optimizer and scheduler from utility function
-optimizer, scheduler = get_optimizer_and_scheduler(model, LEARNING_RATE, WARM_UP_STEPS, TOTAL_STEPS)
+# optimizer, scheduler = get_optimizer_and_scheduler(model, LEARNING_RATE, WARM_UP_STEPS, TOTAL_STEPS)
 
 # DeepSpeed initialization
-model, optimizer, _, _ = deepspeed.initialize(
+# model, optimizer, _, _ = deepspeed.initialize(
+#     model=model,
+#     model_parameters=model.parameters(),
+#     config=DS_CONFIG,
+#     optimizer=optimizer
+# )
+model, optimizer, _, lr_scheduler = deepspeed.initialize(
     model=model,
     model_parameters=model.parameters(),
-    config=DS_CONFIG,
-    optimizer=optimizer
+    config=DS_CONFIG
 )
+
 
 step = 0
 for epoch in range(EPOCHS):
@@ -67,16 +98,18 @@ for epoch in range(EPOCHS):
         outputs2 = model.encode(batch2)
         loss = criterion(outputs1, outputs2)
         
-        model.backward(loss)  # DeepSpeed backward pass
-        model.step()  # DeepSpeed optimizer step
-        scheduler.step()  # Manual scheduler step
-        
+        # optimizer.zero_grad()
+        # loss.backward()
+        # optimizer.step()
+        # scheduler.step()
+        model.backward(loss)
+        model.step()
         total_loss += loss.item()
         step += 1
         
         if step % SAVE_STEP == 0:
             print(f'Saving model at step {step}')
-            model.save_checkpoint(f'./weights/contrastive/step_{step}/')
+            model.save_checkpoint(f'./weights/contrastive/ds_step_{step}/')
         
         avg_loss = total_loss / (progress_bar.n + 1)
         progress_bar.set_postfix({'Step': step, "Loss": avg_loss})
