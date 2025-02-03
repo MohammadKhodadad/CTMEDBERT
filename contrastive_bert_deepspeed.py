@@ -109,7 +109,7 @@ for epoch in range(EPOCHS):
         
         if step % SAVE_STEP == 0:
             print(f'Saving model at step {step}')
-            model.save_checkpoint(f'./weights/contrastive/ds_step_{step}/')
+            model.module.save_pretrained(f'./weights/contrastive/ds_step_{step}/')
         
         avg_loss = total_loss / (progress_bar.n + 1)
         progress_bar.set_postfix({'Step': step, "Loss": avg_loss})
