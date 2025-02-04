@@ -1,4 +1,5 @@
 import os
+import json
 import pandas as pd
 import numpy as np
 import faiss
@@ -14,8 +15,9 @@ def load_csv_files(directory):
         if file.endswith(".csv"):
             file_path = os.path.join(directory, file)
             df = pd.read_csv(file_path)
+            df = df.dropna()
             if {'sentence1', 'sentence2'}.issubset(df.columns):
-                all_data.append(df.iloc[:512]) # For now
+                all_data.append(df) 
     return pd.concat(all_data, ignore_index=True) if all_data else None
 
 def mean_pooling(model_output, attention_mask):
@@ -25,17 +27,34 @@ def mean_pooling(model_output, attention_mask):
     return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
 
 def embed_sentences(sentences, model, tokenizer, batch_size=64):
-    """Encodes sentences using the transformer model."""
+    """Encodes sentences using the transformer model and returns embeddings."""
     embeddings = []
     with torch.no_grad():
         for i in tqdm(range(0, len(sentences), batch_size), desc="Embedding Sentences"):
-            batch = sentences[i:i+batch_size]
-            tokens = tokenizer(batch, padding=True, truncation=True, return_tensors="pt").to(model.device)
-            model_output = model(**tokens)
-            pooled_output = mean_pooling(model_output, tokens['attention_mask'])
-            normalized_emb = F.normalize(pooled_output, p=2, dim=1)
-            embeddings.append(normalized_emb.cpu().numpy())
+            try:
+                batch = sentences[i:i+batch_size]
+                tokens = tokenizer(batch, padding=True, truncation=True, return_tensors="pt").to(model.device)
+                model_output = model(**tokens)
+                pooled_output = mean_pooling(model_output, tokens['attention_mask'])
+                normalized_emb = F.normalize(pooled_output, p=2, dim=1)
+                embeddings.append(normalized_emb.cpu().numpy())
+            except Exception as e:
+                print(e)
+                print(batch)
     return np.vstack(embeddings)
+
+def save_embeddings(embeddings, file_path):
+    """Saves embeddings as a NumPy file."""
+    np.save(file_path, embeddings)
+    print(f"Embeddings saved to {file_path}")
+
+def load_embeddings(file_path):
+    """Loads embeddings from a NumPy file."""
+    if os.path.exists(file_path):
+        return np.load(file_path)
+    else:
+        print(f"File {file_path} not found!")
+        return None
 
 def find_hard_negatives(query_embs, doc_embs, k=5):
     """Finds hard negatives using FAISS nearest neighbor search."""
@@ -45,7 +64,7 @@ def find_hard_negatives(query_embs, doc_embs, k=5):
     hard_negatives = [indices[i][1:] for i in range(len(indices))]  # Skip the first (self-match)
     return hard_negatives
 
-def create_hard_negatives(directory, model_name="thenlper/gte-base", output_file="processed_data.csv"):
+def save_hard_negatives(directory, model_name="thenlper/gte-base", embedding_file="embeddings.npy", output_file="processed_data.csv"):
     print("Loading data...")
     df = load_csv_files(directory)
     if df is None:
@@ -61,11 +80,25 @@ def create_hard_negatives(directory, model_name="thenlper/gte-base", output_file
     
     print("Embedding sentences...")
     embeddings = embed_sentences(sentences, model, tokenizer)
+    save_embeddings(embeddings, embedding_file)
+    print("Embeddings saved.")
+
+def load_and_process_hard_negatives(directory, embedding_file, output_file):
+    print("Loading data...")
+    df = load_csv_files(directory)
+    if df is None:
+        print("No valid CSV files found!")
+        return
+    
+    print("Loading precomputed embeddings...")
+    embeddings = load_embeddings(embedding_file)
+    if embeddings is None:
+        return
     
     print("Finding hard negatives...")
-    hard_negatives = find_hard_negatives(embeddings[:len(df)], embeddings[len(df):], k=1)
+    hard_negatives = find_hard_negatives(embeddings[len(df):], embeddings[len(df):], k=3)
     
-    df['hard_negative'] = [df.iloc[idx[0]]['sentence2'] for idx in hard_negatives]
+    df['hard_negative'] = json.dumps([df.iloc[idx[0]]['sentence2'] for idx in hard_negatives])
     
     print("Saving processed data...")
     df.to_csv(output_file, index=False)
@@ -73,5 +106,8 @@ def create_hard_negatives(directory, model_name="thenlper/gte-base", output_file
 
 if __name__ == "__main__":
     directory = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/data/csvs"  # Change this to your CSV directory
-    create_hard_negatives(directory,output_file= '/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/data/hard_neg/hard_negative_v1.csv')
-
+    embedding_file = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/data/embeddings.npy"
+    output_file = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/data/hard_neg/hard_negative_v1.csv"
+    
+    save_hard_negatives(directory, embedding_file=embedding_file)
+    load_and_process_hard_negatives(directory, embedding_file=embedding_file, output_file=output_file)
