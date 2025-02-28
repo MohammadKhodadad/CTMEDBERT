@@ -96,9 +96,9 @@ def load_and_process_hard_negatives(directory, embedding_file, output_file):
         return
     
     print("Finding hard negatives...")
-    hard_negatives = find_hard_negatives(embeddings[len(df):], embeddings[len(df):], k=3)
+    hard_negatives = find_hard_negatives(embeddings[len(df):], embeddings[len(df):], k=5)
     
-    df['hard_negative'] = json.dumps([df.iloc[idx[0]]['sentence2'] for idx in hard_negatives])
+    df['hard_negative'] = [json.dumps([df.iloc[id_]['sentence2'] for id_ in idx]) for idx in hard_negatives]
     
     print("Saving processed data...")
     df.to_csv(output_file, index=False)

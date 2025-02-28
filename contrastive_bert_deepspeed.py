@@ -11,7 +11,31 @@ from utils.contrastive_data_loader import get_contrastive_dataloader
 from utils.dataloader.mimic import create_mimic_cl_data_from_csv
 from utils.dataloader.pubmed import download_pubmed_cl
 from utils.dataloader.trialsgov import create_trials_contrastive_learning_data
-from utils.optimizer import get_optimizer_and_scheduler
+from utils.dataloader.medmcqa import create_medmcqa_contrastive_leanring_data
+from utils.dataloader.medqa import create_medqa_contrastive_leanring_data
+from utils.dataloader.medquad import create_medquad_contrastive_leanring_data
+from utils.dataloader.wikipedia import create_wiki_cl
+
+# from utils.optimizer import get_optimizer_and_scheduler
+
+
+
+# print('Handling Wiki Data')
+# create_wiki_cl()
+# print('Handling Mimic Data')
+# create_mimic_cl_data_from_csv('./data/discharge_processed.csv','./data/csvs','discharge_diagnosis',['chief_complaint','history_of_present_illness'])
+# print('Handling PubMed Data')
+# download_pubmed_cl('./data/csvs')
+# print('Handling Trials Data')
+# create_trials_contrastive_learning_data('./data/clinical_trials_all_studies.csv','./data/csvs')
+# print('Handling medmcqa Data')
+# create_medmcqa_contrastive_leanring_data('./data/csvs')
+# print('Handling medqa Data')
+# create_medqa_contrastive_leanring_data('./data/csvs')
+# print('Handling medquad Data')
+# create_medquad_contrastive_leanring_data('./data/csvs')
+
+
 
 # DeepSpeed configuration without ZeRO optimization and gradient accumulation
 # DS_CONFIG = {
@@ -20,20 +44,29 @@ from utils.optimizer import get_optimizer_and_scheduler
 # }
 
 EPOCHS = 100
-SAVE_STEP = 2000
+SAVE_STEP = 500
 WARM_UP_STEPS = 1000
 TOTAL_STEPS = 100000
 LEARNING_RATE = 0.00005
-BATCH_SIZE = 100  # Ensure batch size is consistent
+BATCH_SIZE = 1024  # Ensure batch size is consistent
+# GRAD_ACC_STEPS=BATCH_SIZE/16
 
 DS_CONFIG = {
     "train_batch_size": BATCH_SIZE,  
+    # "gradient_accumulation_steps": GRAD_ACC_STEPS,
     "bf16": {"enabled": True},
     # "zero_optimization": {
-    #     "stage": 2,  # ZeRO-2 for performance and memory optimization
-    #     "offload_optimizer": {"device": "none"},  # Keep optimizer on GPU
-    #     "offload_param": {"device": "none"}  # Keep parameters on GPU
-    # },
+    #     "stage": 3,
+    #     "offload_optimizer": {
+    #         "device": "cpu",
+    #         "pin_memory": True
+    #     },
+    #     "offload_param": {
+    #         "device": "cpu",
+    #         "pin_memory": True
+    #     }
+    #     },
+
     "optimizer": {
         "type": "AdamW",
         "params": {
@@ -43,6 +76,7 @@ DS_CONFIG = {
             "weight_decay": 0.01
         }
     },
+    "gradient_checkpointing": True,
     "scheduler": {
         "type": "WarmupLR",
         "params": {
@@ -56,14 +90,31 @@ DS_CONFIG = {
 
 
 # Load tokenizer and model
-tokenizer = load_tokenizer("bert-base-uncased")
-model = Model("/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/mlm/step_130000")
+print('Data Loading...')
+# tokenizer = load_tokenizer("bert-base-uncased")
+# model = Model("/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/mlm/step_130000")
+
+# tokenizer = load_tokenizer("intfloat/e5-base")
+# model = Model("intfloat/e5-base")
+
+tokenizer = load_tokenizer("thenlper/gte-base")
+model = Model("thenlper/gte-base",peft_r=None,grad_checkpointing=True)
+
+
+
+# tokenizer = load_tokenizer("Alibaba-NLP/gte-base-en-v1.5")
+# model = Model("Alibaba-NLP/gte-base-en-v1.5")
+
+
+# tokenizer = load_tokenizer("sentence-transformers/all-mpnet-base-v2")
+# model = Model("sentence-transformers/all-mpnet-base-v2")
 
 # Load data with specified batch size
-train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE)
+train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE,max_length=256)
 
 # Loss function
 criterion = InfoNCELoss()
+# criterion = InfoNCELossChunked(chunk_size=16)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -77,12 +128,13 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #     config=DS_CONFIG,
 #     optimizer=optimizer
 # )
+print("Deepspeed Initialization ...")
 model, optimizer, _, lr_scheduler = deepspeed.initialize(
     model=model,
     model_parameters=model.parameters(),
-    config=DS_CONFIG
+    config=DS_CONFIG,
 )
-
+print("Training...")
 
 step = 0
 for epoch in range(EPOCHS):
@@ -94,22 +146,26 @@ for epoch in range(EPOCHS):
         batch1 = {key: batch1[key].to(device) for key in batch1.keys()}
         batch2 = {key: batch2[key].to(device) for key in batch2.keys()}
         
-        outputs1 = model.encode(batch1)
-        outputs2 = model.encode(batch2)
+        outputs1 = model.encode(batch1, use_cls=False)
+        outputs2 = model.encode(batch2, use_cls=False)
         loss = criterion(outputs1, outputs2)
-        
+
         # optimizer.zero_grad()
         # loss.backward()
         # optimizer.step()
         # scheduler.step()
+        
         model.backward(loss)
+        # loss_list = criterion(outputs1, outputs2)
+        # for loss_chunk in loss_list:
+        #     model.backward(loss_chunk)
         model.step()
         total_loss += loss.item()
         step += 1
         
         if step % SAVE_STEP == 0:
             print(f'Saving model at step {step}')
-            model.module.save_pretrained(f'./weights/contrastive/ds_step_{step}/')
+            model.module.save_pretrained(f'./weights/contrastive_gte_7/ds_step_{step}/')
         
         avg_loss = total_loss / (progress_bar.n + 1)
         progress_bar.set_postfix({'Step': step, "Loss": avg_loss})
@@ -125,8 +181,8 @@ for epoch in range(EPOCHS):
             batch1 = {key: batch1[key].to(device) for key in batch1.keys()}
             batch2 = {key: batch2[key].to(device) for key in batch2.keys()}
             
-            outputs1 = model.encode(batch1)
-            outputs2 = model.encode(batch2)
+            outputs1 = model.encode(batch1, use_cls=False)
+            outputs2 = model.encode(batch2, use_cls=False)
             
             loss = criterion(outputs1, outputs2)
             total_eval_loss += loss.item()
