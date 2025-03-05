@@ -7,7 +7,7 @@ from torch.optim.lr_scheduler import LambdaLR
 from utils.model_loader import Model
 from utils.tokenizer_loader import load_tokenizer
 from utils.loss import InfoNCELoss
-from utils.contrastive_data_loader import get_contrastive_dataloader
+from utils.contrastive_data_loader_ordered import get_contrastive_dataloader
 from utils.dataloader.mimic import create_mimic_cl_data_from_csv
 from utils.dataloader.pubmed import download_pubmed_cl
 from utils.dataloader.trialsgov import create_trials_contrastive_learning_data
@@ -48,7 +48,7 @@ SAVE_STEP = 500
 WARM_UP_STEPS = 1000
 TOTAL_STEPS = 100000
 LEARNING_RATE = 0.00005
-BATCH_SIZE = 1024  # Ensure batch size is consistent
+BATCH_SIZE = 800  # Ensure batch size is consistent
 # GRAD_ACC_STEPS=BATCH_SIZE/16
 
 DS_CONFIG = {
@@ -110,7 +110,7 @@ model = Model("thenlper/gte-base",peft_r=None,grad_checkpointing=True)
 # model = Model("sentence-transformers/all-mpnet-base-v2")
 
 # Load data with specified batch size
-train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE,max_length=256)
+train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE,max_length=512)
 
 # Loss function
 criterion = InfoNCELoss()
@@ -165,7 +165,7 @@ for epoch in range(EPOCHS):
         
         if step % SAVE_STEP == 0:
             print(f'Saving model at step {step}')
-            model.module.save_pretrained(f'./weights/contrastive_gte_7/ds_step_{step}/')
+            model.module.save_pretrained(f'./weights/contrastive_gte_10/ds_step_{step}/')
         
         avg_loss = total_loss / (progress_bar.n + 1)
         progress_bar.set_postfix({'Step': step, "Loss": avg_loss})

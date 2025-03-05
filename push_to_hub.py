@@ -6,7 +6,7 @@ import torch
 # hf_address = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/supervised_contrastive/ds_step_16000"
 # tokenizer_name = "bert-base-uncased"
 
-hf_address = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/contrastive_gte_7/ds_step_6000"
+hf_address = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/contrastive_gte_8/ds_step_7000"
 tokenizer_name = "thenlper/gte-base"
 
 model = AutoModel.from_pretrained(hf_address)
@@ -21,7 +21,7 @@ model = AutoModel.from_pretrained(hf_address)
 # model.load_state_dict(checkpoint, strict=False) 
 
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-repo_name = "skyfury/CTMEDGTE-cl7-step_6000"
+repo_name = "skyfury/CTMEDGTE-cl8-step_7000"
 
 
 model.push_to_hub(repo_name)
@@ -29,20 +29,20 @@ tokenizer.push_to_hub(repo_name)
 
 
 
-# Load the tokenizer and transformer model
-word_embedding_model = models.Transformer(repo_name, max_seq_length=256)
+# # Load the tokenizer and transformer model
+# word_embedding_model = models.Transformer(repo_name, max_seq_length=256)
 
-# Create the pooling layer
-pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
+# # Create the pooling layer
+# pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
 
-# Initialize the SentenceTransformer model
-model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
+# # Initialize the SentenceTransformer model
+# model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
 
-# Push model to Hugging Face Hub
-# model.save("local_ctmedgte")  # Save locally before pushing (optional)
-model.push_to_hub('skyfury/CTMEDGTE7_encoder')
+# # Push model to Hugging Face Hub
+# # model.save("local_ctmedgte")  # Save locally before pushing (optional)
+# model.push_to_hub('skyfury/CTMEDGTE7_encoder')
 
-print(f"Model pushed successfully to {repo_name}")
+# print(f"Model pushed successfully to {repo_name}")
 
 
 # # Step 1: Load the transformer model
