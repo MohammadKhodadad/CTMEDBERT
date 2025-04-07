@@ -110,8 +110,8 @@ model = Model("thenlper/gte-base",peft_r=None,grad_checkpointing=True)
 # model = Model("sentence-transformers/all-mpnet-base-v2")
 
 # Load data with specified batch size
-train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE,max_length=512)
-
+# train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE,max_length=512)
+train_loader, test_loader = get_contrastive_dataloader('./data/Ali_csvs', tokenizer, batch_size=BATCH_SIZE,max_length=512)
 # Loss function
 criterion = InfoNCELoss()
 # criterion = InfoNCELossChunked(chunk_size=16)
@@ -165,7 +165,7 @@ for epoch in range(EPOCHS):
         
         if step % SAVE_STEP == 0:
             print(f'Saving model at step {step}')
-            model.module.save_pretrained(f'./weights/contrastive_gte_11/ds_step_{step}/')
+            model.module.save_pretrained(f'./weights/contrastive_gte_11_ali/ds_step_{step}/')
         
         avg_loss = total_loss / (progress_bar.n + 1)
         progress_bar.set_postfix({'Step': step, "Loss": avg_loss})
