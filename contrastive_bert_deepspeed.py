@@ -15,6 +15,7 @@ from utils.dataloader.medmcqa import create_medmcqa_contrastive_leanring_data
 from utils.dataloader.medqa import create_medqa_contrastive_leanring_data
 from utils.dataloader.medquad import create_medquad_contrastive_leanring_data
 from utils.dataloader.wikipedia import create_wiki_cl
+from utils.dataloader.curev1 import create_curev1_contrastive_learning_data
 
 # from utils.optimizer import get_optimizer_and_scheduler
 
@@ -34,8 +35,12 @@ from utils.dataloader.wikipedia import create_wiki_cl
 # create_medqa_contrastive_leanring_data('./data/csvs')
 # print('Handling medquad Data')
 # create_medquad_contrastive_leanring_data('./data/csvs')
-
-
+# print('Handling curev1 Data')
+# create_curev1_contrastive_learning_data('./data/csvs')
+# print('Handling Biorxiv Data')
+# create_biorxiv_sentence_data('./data/csvs')
+# print('Handling Medrxiv Data')
+# create_medrxiv_sentence_data('./data/csvs')
 
 # DeepSpeed configuration without ZeRO optimization and gradient accumulation
 # DS_CONFIG = {
@@ -110,8 +115,8 @@ model = Model("thenlper/gte-base",peft_r=None,grad_checkpointing=True)
 # model = Model("sentence-transformers/all-mpnet-base-v2")
 
 # Load data with specified batch size
-# train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE,max_length=512)
-train_loader, test_loader = get_contrastive_dataloader('./data/Ali_csvs', tokenizer, batch_size=BATCH_SIZE,max_length=512)
+train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE,max_length=512)
+# train_loader, test_loader = get_contrastive_dataloader('./data/Ali_csvs', tokenizer, batch_size=BATCH_SIZE,max_length=512)
 # Loss function
 criterion = InfoNCELoss()
 # criterion = InfoNCELossChunked(chunk_size=16)
