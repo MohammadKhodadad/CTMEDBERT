@@ -17,8 +17,9 @@ from utils.dataloader.medquad import create_medquad_contrastive_leanring_data
 from utils.dataloader.wikipedia import create_wiki_cl
 from utils.dataloader.curev1 import create_curev1_contrastive_learning_data
 from utils.dataloader.biomedarxiv import create_medrxiv_sentence_data, create_biorxiv_sentence_data
-
-# from utils.optimizer import get_optimizer_and_scheduler
+from utils.dataloader.treccovid import create_trec_covid_contrastive_data
+from utils.dataloader.nfcorpus import create_nfcorpus_contrastive_learning_data
+from utils.optimizer import get_optimizer_and_scheduler
 
 
 
@@ -38,8 +39,16 @@ from utils.dataloader.biomedarxiv import create_medrxiv_sentence_data, create_bi
 # create_medquad_contrastive_leanring_data('./data/csvs')
 # print('Handling curev1 Data')
 # create_curev1_contrastive_learning_data('./data/csvs')
+# print('Handling Biorxiv Data')
+# create_biorxiv_sentence_data('./data/csvs')
+# print('Handling Medrxiv Data')
+# create_medrxiv_sentence_data('./data/csvs')
+# print("Handling TREC data")
+# create_trec_covid_contrastive_data('./data/csvs')
+# print('Handling nfcorpus data')
+# create_nfcorpus_contrastive_learning_data('./data/csvs')
 
-print('Handling Biorxiv Data')
-create_biorxiv_sentence_data('./data/csvs')
-print('Handling Medrxiv Data')
-create_medrxiv_sentence_data('./data/csvs')
+
+# BATCH_SIZE=10
+# tokenizer = load_tokenizer("thenlper/gte-base")
+# train_loader, test_loader = get_contrastive_dataloader('./data/csvs', tokenizer, batch_size=BATCH_SIZE,max_length=512)

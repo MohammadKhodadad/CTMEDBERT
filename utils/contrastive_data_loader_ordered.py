@@ -27,19 +27,24 @@ class PerSourceContrastiveDataset(Dataset):
             files = [os.path.join(data_source, f) for f in os.listdir(data_source) if f.endswith('.csv')]
             sources = []
             for file in files:
-                df = pd.read_csv(file).dropna().reset_index(drop=True)
-                if initial_shuffle:
-                    df = df.sample(frac=1, random_state=shuffle_seed).reset_index(drop=True)
-                sources.append(df)
+                
+                print(f'Processing address: {file}')
+                try:
+                    df = pd.read_csv(file).dropna().drop_duplicates(subset=['sentence1']).reset_index(drop=True)
+                    if initial_shuffle:
+                        df = df.sample(frac=1, random_state=shuffle_seed).reset_index(drop=True)
+                    sources.append(df)
+                except Exception as e:
+                    print(e)
         elif isinstance(data_source, pd.DataFrame):
-            df = data_source.dropna().reset_index(drop=True)
+            df = data_source.drop_duplicates(subset=['sentence1']).dropna().reset_index(drop=True)
             if initial_shuffle:
                 df = df.sample(frac=1, random_state=shuffle_seed).reset_index(drop=True)
             sources = [df]
         elif isinstance(data_source, list):
             sources = []
             for data_item in data_source:
-                df = data_item.dropna().reset_index(drop=True)
+                df = data_item.drop_duplicates(subset=['sentence1']).dropna().reset_index(drop=True)
                 if initial_shuffle:
                     df = df.sample(frac=1, random_state=shuffle_seed).reset_index(drop=True)
                 sources.append(df)
