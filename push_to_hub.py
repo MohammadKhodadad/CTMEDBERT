@@ -6,7 +6,7 @@ import torch
 # hf_address = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/supervised_contrastive/ds_step_16000"
 # tokenizer_name = "bert-base-uncased"
 
-hf_address = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/contrastive_gte_11_ali/ds_step_25000"
+hf_address = "/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/weights/contrastive_gte_12/ds_step_3500"
 tokenizer_name = "thenlper/gte-base"
 
 model = AutoModel.from_pretrained(hf_address)
@@ -21,7 +21,7 @@ model = AutoModel.from_pretrained(hf_address)
 # model.load_state_dict(checkpoint, strict=False) 
 
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-repo_name = "skyfury/CTMEDGTE-cl11-chem-step_25000"
+repo_name = "skyfury/CTMEDGTE-cl12-step_3500"
 
 
 model.push_to_hub(repo_name)
