@@ -17,7 +17,7 @@ def pubmed_get_article_details_batch(pmids, batch_size=1000):
     """
     abstracts = []
     
-    for i in tqdm.tqdm(range(0, len(pmids), batch_size)):
+    for i in tqdm.tqdm(tqdm.tqdm(range(0, len(pmids), batch_size))):
         batch_pmids = pmids[i:i+batch_size]
         pmid_str = ",".join(batch_pmids)
         
@@ -39,7 +39,7 @@ def pubmed_get_article_details_batch(pmids, batch_size=1000):
         except Exception as e:
             print(f"Error fetching batch {i//batch_size + 1}: {e}")
         
-        time.sleep(1)  # Avoid hitting PubMed rate limits
+        time.sleep(0.25)  # Avoid hitting PubMed rate limits
 
     return abstracts
 
@@ -57,7 +57,7 @@ def fetch_pubmed_abstracts(query, max_results_per_month, years):
     for year in years:
         for month in range(1, 13):
             start_date = f"{year}/{month:02d}/01"
-            end_date = f"{year}/{month:02d}/31"
+            end_date = f"{year}/{month:02d}/15"
             query_with_date = f"{query} AND ({start_date}[PDAT] : {end_date}[PDAT])"
 
             print(f"Fetching data for: {query_with_date}")
@@ -74,7 +74,27 @@ def fetch_pubmed_abstracts(query, max_results_per_month, years):
             except Exception as e:
                 print(f"Error fetching article IDs for {query_with_date}: {e}")
 
-            time.sleep(1)  # Avoid hitting PubMed rate limits
+            time.sleep(0.25)  # Avoid hitting PubMed rate limits
+
+            start_date = f"{year}/{month:02d}/16"
+            end_date = f"{year}/{month:02d}/30"
+            query_with_date = f"{query} AND ({start_date}[PDAT] : {end_date}[PDAT])"
+
+            print(f"Fetching data for: {query_with_date}")
+
+            try:
+                handle = Entrez.esearch(db="pubmed", term=query_with_date, retmax=max_results_per_month)
+                record = Entrez.read(handle)
+                handle.close()
+
+                monthly_ids = set(record.get("IdList", []))  # Convert to set to remove duplicates
+                id_list.update(monthly_ids)
+
+                print(f"Year {year}, Month {month}: Found {len(monthly_ids)} articles.")
+            except Exception as e:
+                print(f"Error fetching article IDs for {query_with_date}: {e}")
+
+            time.sleep(0.25)  # Avoid hitting PubMed rate limits
 
     if not id_list:
         print("No articles found for the query.")
@@ -130,10 +150,10 @@ def download_pubmed_mlm(output_dir, max_results=50000, query='("Therapeutics"[Me
     pubmed_abstracts = fetch_pubmed_abstracts(query, max_results, years)
     save_abstracts_for_mlm(pubmed_abstracts, output_dir=output_dir, name=query.replace(' ', '_'))
 
-def download_pubmed_cl(output_dir, max_results=50000, query='("Therapeutics"[MeSH] OR "Medicine"[MeSH] OR "Epidemiology"[MeSH] OR "Pathology"[MeSH] OR "Diagnosis"[MeSH] OR "Treatment Outcome"[MeSH] OR "Clinical Medicine"[MeSH] OR "Public Health"[MeSH] OR "Pharmacology"[MeSH] OR "Internal Medicine"[MeSH] OR "Surgery"[MeSH] OR "Genetics"[MeSH] OR "Molecular Biology"[MeSH] OR "Medical Informatics"[MeSH] OR "Precision Medicine"[MeSH] OR "Evidence-Based Medicine"[MeSH])'):
-    years = [2022,2023,2024]
+def download_pubmed_cl(output_dir, max_results=500000, query='("Therapeutics"[MeSH] OR Pathology OR Clinical Trials OR medicine OR "Medicine"[MeSH] OR "Epidemiology"[MeSH] OR "Pathology"[MeSH] OR "Diagnosis"[MeSH] OR "Treatment Outcome"[MeSH] OR "Clinical Medicine"[MeSH] OR "Public Health"[MeSH] OR "Pharmacology"[MeSH] OR "Internal Medicine"[MeSH] OR "Surgery"[MeSH] OR "Genetics"[MeSH] OR "Molecular Biology"[MeSH] OR "Medical Informatics"[MeSH] OR "Precision Medicine"[MeSH] OR "Evidence-Based Medicine"[MeSH])'):
+    years = [2024,2023,2022]
     pubmed_abstracts = fetch_pubmed_abstracts(query, max_results, years)
-    save_abstracts_for_contrastive(pubmed_abstracts, output_dir=output_dir, name='pubmed_pairs')
+    save_abstracts_for_contrastive(pubmed_abstracts, output_dir=output_dir, name='pubmed_pairs2')
 
 if __name__ == "__main__":
     # Example query

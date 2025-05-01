@@ -28,7 +28,7 @@ from utils.optimizer import get_optimizer_and_scheduler
 # print('Handling Mimic Data')
 # create_mimic_cl_data_from_csv('./data/discharge_processed.csv','./data/csvs','discharge_diagnosis',['chief_complaint','history_of_present_illness'])
 # print('Handling PubMed Data')
-# download_pubmed_cl('./data/csvs')
+download_pubmed_cl('./data/csvs')
 # print('Handling Trials Data')
 # create_trials_contrastive_learning_data('./data/clinical_trials_all_studies.csv','./data/csvs')
 # print('Handling medmcqa Data')

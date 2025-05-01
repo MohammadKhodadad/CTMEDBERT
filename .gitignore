@@ -5,3 +5,4 @@ created_data/
 weights/
 *.json
 *.csv
+.env

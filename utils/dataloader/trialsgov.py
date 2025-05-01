@@ -156,7 +156,7 @@ def create_and_store_trials_data(address='created_data/trialsgovdata.csv'):
     page_size = 1000  # Number of studies per page
 
     # Fetch all study data
-    clinical_trials_df = fetch_all_studies_with_pagination(base_api_url, page_size=page_size)
+    clinical_trials_df = fetch_all_studies_with_pagination(base_api_url, page_size=page_size, max_pages=400)
     save_to_csv(clinical_trials_df,address)
 
 
@@ -224,7 +224,7 @@ def create_trials_contrastive_learning_data(input_file, output_folder):
 
     # Convert to DataFrame and save to .csv file
     contrastive_df = pd.DataFrame(contrastive_data)
-    contrastive_file_path = os.path.join(output_folder, "contrastive_trials_data.csv")
+    contrastive_file_path = os.path.join(output_folder, "contrastive_trials_data2.csv")
     contrastive_df.to_csv(contrastive_file_path, index=False)
     print(f"Contrastive Learning dataset created and saved to {contrastive_file_path}")
 
@@ -232,8 +232,8 @@ def create_trials_contrastive_learning_data(input_file, output_folder):
 # Example usage
 if __name__ == "__main__":
     # create_and_store_trials_data()
-    create_trials_mlm_data('../../data/clinical_trials_all_studies.csv',
-    './created_data/')
-    create_trials_contrastive_learning_data('../../data/clinical_trials_all_studies.csv',
-    './created_data/')
+    # create_trials_mlm_data('../../data/clinical_trials_all_studies.csv',
+    # './created_data/')
+    create_trials_contrastive_learning_data('./created_data/trialsgovdata.csv',
+    '/home/skyfury/projects/def-mahyarh/skyfury/CTMEDBERT/CTMEDBERT/data/csvs')
 
