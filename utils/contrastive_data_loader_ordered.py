@@ -6,7 +6,7 @@ import random
 
 # Dataset that splits each data source into train and test parts.
 class PerSourceContrastiveDataset(Dataset):
-    def __init__(self, data_source, tokenizer, split='train', train_frac=0.8, max_length=512, initial_shuffle=True, shuffle_seed=None):
+    def __init__(self, data_source, tokenizer, split='train', train_frac=0.80, max_length=512, initial_shuffle=True, shuffle_seed=None):
         """
         data_source: either a directory path (str) with CSV files or a single pandas DataFrame.
         tokenizer: tokenizer for processing sentences.
@@ -173,7 +173,7 @@ class RandomPerSourceBatchSampler(Sampler):
 
 # Function to create train and test DataLoaders using the above dataset and batch sampler.
 def get_contrastive_dataloader(data_source, tokenizer, batch_size=32, max_length=512,
-                                train_frac=0.8, drop_last=False, reshuffle_each_epoch=True, shuffle_seed=None):
+                                train_frac=0.99, drop_last=False, reshuffle_each_epoch=True, shuffle_seed=None):
     # Create train and test datasets.
     train_dataset = PerSourceContrastiveDataset(data_source, tokenizer, split='train',
                                                 train_frac=train_frac, max_length=max_length,
